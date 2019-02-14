@@ -1,5 +1,21 @@
 function divEscapedContentElement(message) {
-  return $('<div></div>').text(message);
+  console.log('Message: ', message);
+  message = message.replace(/\>/, '&gt');
+  message = message.replace(/\</, '&lt');
+  var clean = $('<div></div>').text(message);
+  console.log('Clean: ', clean);
+  let a = $(clean[0]);
+  return  `
+  <div class="d-flex justify-content-end mb-4">
+    <div class="msg_cotainer_send">
+      ${message}
+      <span class="msg_time_send">8:55 AM, Today</span>
+    </div>
+    <div class="img_cont_msg">
+  <img src="https://ih0.redbubble.net/image.373223104.8912/flat,550x550,075,f.u1.jpg" class="rounded-circle user_img_msg">
+    </div>
+  </div>
+  `
 }
 
 function divSystemContentElement(message) {
@@ -72,5 +88,13 @@ $(document).ready(function() {
   $('#send-form').submit(function() {
     processUserInput(chatApp, socket);
     return false;
+  });
+  
+  $('#send-message').keypress(function(e) {
+    var code = (e.keyCode ? e.keyCode : e.which);
+    if (code == 13){
+      $('#send-form').submit();
+      e.preventDefault();
+    }
   });
 });

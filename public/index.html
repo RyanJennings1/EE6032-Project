@@ -1,33 +1,87 @@
-<!doctype html>
-<html lang='en'>
-
-  <head>
-    <title>Chat</title>
-    <link rel='stylesheet' href='/stylesheets/style.css'></link>
-  </head>
-
-  <body>
-    <div id='content'>
-      <div id='room'></div>
-      <div id='room-list'></div>
-      <div id='messages'></div>
-      <form id='send-form'>
-        <input id='send-message' />
-        <input id='send-button' type='submit' value='Send'/>
-
-        <div id='help'>
-          Chat commands:
-          <ul>
-            <li>Change nickname: <code>/nick [username]</code></li>
-            <li>Join/create room: <code>/join [room name]</code></li>
-          </ul>
-        </div>
-      </form>
-    </div>
-    <script src='/socket.io/socket.io.js' type='text/javascript'></script>
-    <script src='http://code.jquery.com/jquery-1.8.0.min.js' type='text/javascript'></script>
-    <script src='/javascripts/chat.js' type='text/javascript'></script>
-    <script src='/javascripts/chat_ui.js' type='text/javascript'></script>
-  </body>
-
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Chat</title>
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<!-- 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script> -->
+<!-- 		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous"> -->
+<!-- 		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous"> -->
+		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+		<link rel='stylesheet' href='/stylesheets/style.css'></link>
+	</head>
+	<body>
+		<div class="container-fluid h-100">
+			<div class="row justify-content-center h-100">
+				<div class="col-md-8 col-xl-6 chat">
+					<div class="card">
+						<div class="card-body msg_card_body" id="messages">
+<!-- 						Left message -->
+							<div class="d-flex justify-content-start mb-4">
+								<div class="img_cont_msg">
+									<img src="https://devilsworkshop.org/files/2013/01/enlarged-facebook-profile-picture.jpg" class="rounded-circle user_img_msg">
+								</div>
+								<div class="msg_cotainer">
+									Hi, how are you samim?
+									<span class="msg_time">8:40 AM, Today</span>
+								</div>
+							</div>
+<!-- 							Right message -->
+							<div class="d-flex justify-content-end mb-4">
+								<div class="msg_cotainer_send">
+									<div>Hi Maryam i hate you</div>
+									<span class="msg_time_send">8:55 AM, Today</span>
+								</div>
+								<div class="img_cont_msg">
+							<img src="https://ih0.redbubble.net/image.373223104.8912/flat,550x550,075,f.u1.jpg" class="rounded-circle user_img_msg">
+								</div>
+							</div>
+							
+							<div class="d-flex justify-content-start mb-4">
+								<div class="img_cont_msg">
+									<img src="https://devilsworkshop.org/files/2013/01/enlarged-facebook-profile-picture.jpg" class="rounded-circle user_img_msg">
+								</div>
+								<div class="msg_cotainer">
+									oK. i hate you too
+									<span class="msg_time">8:40 AM, Today</span>
+								</div>
+							</div>
+							
+							<div class="d-flex justify-content-end mb-4">
+								<div class="msg_cotainer_send">
+									bitch
+									<span class="msg_time_send">8:55 AM, Today</span>
+								</div>
+								<div class="img_cont_msg">
+							<img src="https://ih0.redbubble.net/image.373223104.8912/flat,550x550,075,f.u1.jpg" class="rounded-circle user_img_msg">
+								</div>
+							</div>
+<!-- 							Footer -->
+						</div>
+						<div class="card-footer">
+							<form id="send-form">
+							<div class="input-group">
+								<div class="input-group-prepend">
+									<span class="input-group-text attach_btn"><i class="fas fa-paperclip"></i></span>
+								</div>
+								<textarea id="send-message" name="" class="form-control type_msg" placeholder="Type your message..."></textarea>
+								<div class="input-group-append">
+									<button class="input-group-text send_btn">
+									<i class="fas fa-location-arrow"></i>
+									</button>
+								</div>
+							</div>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+		<script src='/socket.io/socket.io.js' type='text/javascript'></script>
+<!-- 		<script src='http://code.jquery.com/jquery-1.8.0.min.js' type='text/javascript'></script> -->
+		<script src='/javascripts/chat.js' type='text/javascript'></script>
+		<script src='/javascripts/chat_ui.js' type='text/javascript'></script>
+	</body>
 </html>
