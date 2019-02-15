@@ -25,7 +25,7 @@ function divEscapedContentElement(message) {
  * Returns system HTML block.
  */
 function divSystemContentElement(message) {
-  return $('<div></div>').html(`<i>${message}</i>`);
+  return $('<div class="d-flex justify-content-center mb-4"></div>').html(`<i>${message}</i>`);
 }
 
 /*
