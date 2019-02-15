@@ -37,6 +37,19 @@ function otherUserDivEscapedContentElement(message, socketId) {
   `;
 }
 
+function downloadFileBox(data) {
+  return `
+  <div>
+    <a href="#" id="download-button" class="btn btn-download">
+      ${data}
+      <span class="download-box">
+        <i class="fas fa-file-download"></i>
+      </span>
+    </a>
+  </div>
+  `;
+}
+
 /*
  * Returns system HTML block.
  */
@@ -61,6 +74,10 @@ function processUserInput(chatApp, socket) {
     $('#messages').scrollTop($('#messages').prop('scrollHeight'));
   }
   $('#send-message').val('');
+}
+
+function processFileTransfer(chatApp, socket, data) {
+  $('#messages').append(downloadFileBox(data, socket.id));
 }
 
 /*
@@ -108,6 +125,15 @@ $(document).ready(() => {
     $('#messages').append(otherUserDivEscapedContentElement(message.text, message.userId));
   });
 
+  /*
+   * Add file download box to chat.
+   */
+  socket.on('sendFile', (data) => {
+    console.log('captured in socket on');
+    // $('#messages').append(downloadFileBox(data));
+    $('#messages').append(divEscapedContentElement(data, socket.id));
+  });
+
   socket.on('rooms', (rooms) => {
     $('#room-list').empty();
 
@@ -133,6 +159,14 @@ $(document).ready(() => {
   $('#send-form').submit(() => {
     processUserInput(chatApp, socket);
     return false;
+  });
+
+  $('#send-file').click(() => {
+    processFileTransfer(chatApp, socket, 'my data');
+  });
+
+  $('#download-button').click(() => {
+    // download file
   });
 
   /*

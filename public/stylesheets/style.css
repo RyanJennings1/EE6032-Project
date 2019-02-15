@@ -290,6 +290,32 @@ body, html {
 	background-color: rgba(0,0,0,0.2);
 }
 
+.btn.btn-download {
+	color: SkyBlue;
+	border: 2px solid;
+}
+
+.btn.btn-download:hover {
+	color: #444;
+}
+
+.download-box {
+	position: relative;
+	display: inline-block;
+	width: 30px;
+	margin-left: 10px;
+}
+
+.download-box .box {
+	position: absolute;
+	bottom: -4px;
+	left: 0;
+	width: 30px;
+	height: 10px;
+	border: 3px solid;
+	border-top: none;
+}
+
 @media(max-width: 576px) {
 	.contacts_card {
 		margin-bottom: 15px !important;
