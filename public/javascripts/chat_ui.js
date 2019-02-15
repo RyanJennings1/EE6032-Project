@@ -1,3 +1,9 @@
+/*
+ * Returns message HTML block.
+ * Escape tags in messages to prevent XXS attacks.
+ * Use Moment.js to get locale time.
+ * TODO: Pass in username for jdenticon value.
+ */
 function divEscapedContentElement(message) {
   message = message.replace(/>/, '&gt');
   message = message.replace(/</, '&lt');
@@ -6,25 +12,30 @@ function divEscapedContentElement(message) {
   <div class="d-flex justify-content-end mb-4">
     <div class="msg_cotainer_send">
       ${message}
-      <span class="msg_time_send">${moment().format('hh:mm:ss a')}</span>
+      <span class="msg_time_send">${moment().format('LT')}</span>
     </div>
     <div class="img_cont_msg">
-  <img src="https://ih0.redbubble.net/image.373223104.8912/flat,550x550,075,f.u1.jpg" class="rounded-circle user_img_msg">
+    <canvas width="80" height="80" data-jdenticon-value="${message}" class="rounded-circle user_img_msg" style="background-color: white"></canvas>
     </div>
   </div>
   `;
 }
 
+/*
+ * Returns system HTML block.
+ */
 function divSystemContentElement(message) {
   return $('<div></div>').html(`<i>${message}</i>`);
 }
 
+/*
+ * Handle input, add message to chat or execute command.
+ */
 function processUserInput(chatApp, socket) {
   const message = $('#send-message').val();
-  let systemMessage;
 
   if (message.charAt(0) === '/') {
-    systemMessage = chatApp.processCommand(message);
+    const systemMessage = chatApp.processCommand(message);
     if (systemMessage) {
       $('#messages').append(divSystemContentElement(systemMessage));
     }
@@ -36,17 +47,18 @@ function processUserInput(chatApp, socket) {
   $('#send-message').val('');
 }
 
+/*
+ * Start program when document ready.
+ */
 const socket = io.connect();
 $(document).ready(() => {
   const chatApp = new Chat(socket);
 
+  /*
+   * Print system message when nickname changed
+   */
   socket.on('nameResult', (result) => {
-    let message;
-    if (result.success) {
-      message = `You are now known as ${result.name}.`;
-    } else {
-      message = result.message;
-    }
+    const message = result.success ? `You are now known as ${result.name}` : result.message;
     $('#messages').append(divSystemContentElement(message));
   });
 
