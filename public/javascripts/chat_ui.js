@@ -6,7 +6,7 @@ function divEscapedContentElement(message) {
   <div class="d-flex justify-content-end mb-4">
     <div class="msg_cotainer_send">
       ${message}
-      <span class="msg_time_send">8:55 AM, Today</span>
+      <span class="msg_time_send">${moment().format('hh:mm:ss a')}</span>
     </div>
     <div class="img_cont_msg">
   <img src="https://ih0.redbubble.net/image.373223104.8912/flat,550x550,075,f.u1.jpg" class="rounded-circle user_img_msg">
