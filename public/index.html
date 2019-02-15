@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Chat</title>
+		<title>Quil</title>
 		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 <!-- 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script> -->
 <!-- 		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous"> -->
@@ -11,53 +11,23 @@
 		<link rel="icon" type="image/png" sizes="512x512"  href="/images/android-chrome-512x512.png">
 	</head>
 	<body>
+		<div id='room' style='display: none'></div>
+		<div id='room-list' style='display: none'></div>
 		<div class="container-fluid h-100">
 			<div class="row justify-content-center h-100">
 				<div class="col-md-8 col-xl-6 chat">
 					<div class="card">
-						<div class="card-body msg_card_body" id="messages">
-<!-- 						Left message -->
-							<div class="d-flex justify-content-start mb-4">
-								<div class="img_cont_msg">
-									<img src="https://devilsworkshop.org/files/2013/01/enlarged-facebook-profile-picture.jpg" class="rounded-circle user_img_msg">
+						<div class="card-header container">
+							<div class="row">
+								<div class="col-md-4">
+									<img src="images/android-chrome-512x512.png" height=40 width=40/>
 								</div>
-								<div class="msg_cotainer">
-									Hi, how are you samim?
-									<span class="msg_time">8:40 AM, Today</span>
+								<div class="col-md-8">
+									<h2>QUIL</h2>
 								</div>
 							</div>
-<!-- 							Right message -->
-							<div class="d-flex justify-content-end mb-4">
-								<div class="msg_cotainer_send">
-									<div>Hi Maryam i hate you</div>
-									<span class="msg_time_send">8:55 AM, Today</span>
-								</div>
-								<div class="img_cont_msg">
-							<img src="https://ih0.redbubble.net/image.373223104.8912/flat,550x550,075,f.u1.jpg" class="rounded-circle user_img_msg">
-								</div>
-							</div>
-							
-							<div class="d-flex justify-content-start mb-4">
-								<div class="img_cont_msg">
-									<img src="https://devilsworkshop.org/files/2013/01/enlarged-facebook-profile-picture.jpg" class="rounded-circle user_img_msg">
-								</div>
-								<div class="msg_cotainer">
-									oK. i hate you too
-									<span class="msg_time">8:40 AM, Today</span>
-								</div>
-							</div>
-							
-							<div class="d-flex justify-content-end mb-4">
-								<div class="msg_cotainer_send">
-									bitch
-									<span class="msg_time_send">8:55 AM, Today</span>
-								</div>
-								<div class="img_cont_msg">
-							<img src="https://ih0.redbubble.net/image.373223104.8912/flat,550x550,075,f.u1.jpg" class="rounded-circle user_img_msg">
-								</div>
-							</div>
-<!-- 							Footer -->
 						</div>
+						<div class="card-body msg_card_body" id="messages"></div>
 						<div class="card-footer">
 							<form id="send-form">
 							<div class="input-group">
