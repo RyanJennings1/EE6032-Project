@@ -1,11 +1,8 @@
 function divEscapedContentElement(message) {
-  console.log('Message: ', message);
-  message = message.replace(/\>/, '&gt');
-  message = message.replace(/\</, '&lt');
-  var clean = $('<div></div>').text(message);
-  console.log('Clean: ', clean);
-  let a = $(clean[0]);
-  return  `
+  message = message.replace(/>/, '&gt');
+  message = message.replace(/</, '&lt');
+
+  return `
   <div class="d-flex justify-content-end mb-4">
     <div class="msg_cotainer_send">
       ${message}
@@ -15,18 +12,18 @@ function divEscapedContentElement(message) {
   <img src="https://ih0.redbubble.net/image.373223104.8912/flat,550x550,075,f.u1.jpg" class="rounded-circle user_img_msg">
     </div>
   </div>
-  `
+  `;
 }
 
 function divSystemContentElement(message) {
-  return $('<div></div>').html('<i>' + message + '</i>');
+  return $('<div></div>').html(`<i>${message}</i>`);
 }
 
 function processUserInput(chatApp, socket) {
-  var message = $('#send-message').val();
-  var systemMessage;
+  const message = $('#send-message').val();
+  let systemMessage;
 
-  if (message.charAt(0) == '/') {
+  if (message.charAt(0) === '/') {
     systemMessage = chatApp.processCommand(message);
     if (systemMessage) {
       $('#messages').append(divSystemContentElement(systemMessage));
@@ -39,60 +36,60 @@ function processUserInput(chatApp, socket) {
   $('#send-message').val('');
 }
 
-var socket = io.connect();
-$(document).ready(function() {
-  var chatApp = new Chat(socket);
+const socket = io.connect();
+$(document).ready(() => {
+  const chatApp = new Chat(socket);
 
-  socket.on('nameResult', function(result) {
-    var message;
+  socket.on('nameResult', (result) => {
+    let message;
     if (result.success) {
-      message = 'You are now known as ' + result.name + '.';
+      message = `You are now known as ${result.name}.`;
     } else {
       message = result.message;
     }
     $('#messages').append(divSystemContentElement(message));
   });
 
-  socket.on('joinResult', function(result) {
+  socket.on('joinResult', (result) => {
     $('#room').text(result.room);
     $('#messages').append(divSystemContentElement('Room changed.'));
   });
 
-  socket.on('message', function (message) {
-    var newElement = $('<div></div>').text(message.text);
+  socket.on('message', (message) => {
+    const newElement = $('<div></div>').text(message.text);
     $('#messages').append(newElement);
   });
 
-  socket.on('rooms', function(rooms) {
+  socket.on('rooms', (rooms) => {
     $('#room-list').empty();
 
-    for(var room in rooms) {
+    for (let room in rooms) {
       room = room.substring(1, room.length);
       if (room != '') {
         $('#room-list').append(divEscapedContentElement(room));
       }
     }
 
-    $('#room-list div').click(function() {
-      chatApp.processCommand('/join ' + $(this).text());
+    $('#room-list div').click(function () {
+      chatApp.processCommand(`/join ${$(this).text()}`);
       $('#send-message').focus();
     });
   });
 
-  setInterval(function() {
+  setInterval(() => {
     socket.emit('rooms');
   }, 1000);
 
   $('#send-message').focus();
 
-  $('#send-form').submit(function() {
+  $('#send-form').submit(() => {
     processUserInput(chatApp, socket);
     return false;
   });
-  
-  $('#send-message').keypress(function(e) {
-    var code = (e.keyCode ? e.keyCode : e.which);
-    if (code == 13){
+
+  $('#send-message').keypress((e) => {
+    const code = (e.keyCode ? e.keyCode : e.which);
+    if (code == 13) {
       $('#send-form').submit();
       e.preventDefault();
     }

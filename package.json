@@ -1,5 +1,5 @@
 {
-  "name": "chatrooms",
+  "name": "EE6032Project",
   "version": "0.0.1",
   "description": "Minimalist multiroom chat server",
   "dependencies": {
@@ -10,9 +10,12 @@
     "eslint": "^5.3.0",
     "eslint-config-airbnb": "^17.1.0",
     "eslint-config-airbnb-base": "^13.1.0",
-    "eslint-plugin-import": "^2.16.0"
+    "eslint-plugin-import": "^2.16.0",
+    "nodemon": "^1.18.10"
   },
   "scripts": {
-    "pretest": "eslint --ignore-path .gitignore ."
+    "pretest": "eslint --ignore-path .gitignore .",
+    "fix": "eslint --fix --ignore-path .gitignore .",
+    "watch": "nodemon server.js"
   }
 }

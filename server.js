@@ -1,11 +1,14 @@
-var http = require('http');
-var fs = require('fs');
-var path = require('path');
-var mime = require('mime-types');
-var cache = {};
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const mime = require('mime-types');
+
+const chatServer = require('./lib/chat_server');
+
+const cache = {};
 
 function send404(response) {
-  response.writeHead(404, {'Content-Type': 'text/plain'});
+  response.writeHead(404, { 'Content-Type': 'text/plain' });
   response.write('Error 404: resource not found.');
   response.end();
 }
@@ -13,7 +16,7 @@ function send404(response) {
 function sendFile(response, filePath, fileContents) {
   response.writeHead(
     200,
-    {"content-type": mime.lookup(path.basename(filePath))}
+    { 'content-type': mime.lookup(path.basename(filePath)) },
   );
   response.end(fileContents);
 }
@@ -22,9 +25,9 @@ function serveStatic(response, cache, absPath) {
   if (cache[absPath]) {
     sendFile(response, absPath, cache[absPath]);
   } else {
-    fs.exists(absPath, function(exists) {
+    fs.exists(absPath, (exists) => {
       if (exists) {
-        fs.readFile(absPath, function(err, data) {
+        fs.readFile(absPath, (err, data) => {
           if (err) {
             send404(response);
           } else {
@@ -39,22 +42,21 @@ function serveStatic(response, cache, absPath) {
   }
 }
 
-var server = http.createServer(function(request, response) {
-  var filePath = false;
+const server = http.createServer((request, response) => {
+  let filePath = false;
 
-  if (request.url == '/') {
+  if (request.url === '/') {
     filePath = 'public/index.html';
   } else {
-    filePath = 'public' + request.url;
+    filePath = `public${request.url}`;
   }
 
-  var absPath = './' + filePath;
+  const absPath = `./${filePath}`;
   serveStatic(response, cache, absPath);
 });
 
-server.listen(3000, function() {
-  console.log("Server listening on port 3000.");
+server.listen(3000, () => {
+  console.log('Server listening on port 3000.');
 });
 
-var chatServer = require('./lib/chat_server');
 chatServer.listen(server);
