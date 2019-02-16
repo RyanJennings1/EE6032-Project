@@ -40,7 +40,7 @@ function otherUserDivEscapedContentElement(message, socketId) {
 function downloadFileBox(data) {
   return `
   <div>
-    <a href="#" id="download-button" class="btn btn-download">
+    <a href="/tmp/${data}" id="download-button" class="btn btn-download" target="_blank">
       ${data}
       <span class="download-box">
         <i class="fas fa-file-download"></i>
@@ -80,10 +80,24 @@ function processFileTransfer(chatApp, socket, data) {
   $('#messages').append(downloadFileBox(data, socket.id));
 }
 
+const socket = io.connect();
+
+function sendFileToServer(img) {
+  socket.emit('writeFile', img);
+}
+
+function handleFiles(data) {
+  const file = data.files[0];
+  const myReader = new FileReader();
+  myReader.onloadend = (e) => {
+    sendFileToServer(myReader.result);
+  };
+  myReader.readAsDataURL(file);
+}
+
 /*
  * Start program when document ready.
  */
-const socket = io.connect();
 $(document).ready(() => {
   const chatApp = new Chat(socket);
 
@@ -161,12 +175,12 @@ $(document).ready(() => {
     return false;
   });
 
-  $('#send-file').click(() => {
-    processFileTransfer(chatApp, socket, 'my data');
+  socket.on('postDownloadBox', (fileName) => {
+    processFileTransfer(chatApp, socket, fileName);
   });
 
   $('#download-button').click(() => {
-    // download file
+    // read file from tmp/ and download
   });
 
   /*
