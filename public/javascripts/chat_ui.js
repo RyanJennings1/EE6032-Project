@@ -37,15 +37,40 @@ function otherUserDivEscapedContentElement(message, socketId) {
   `;
 }
 
-function downloadFileBox(data) {
+function downloadFileBox(fileName, socketId) {
   return `
-  <div>
-    <a href="/tmp/${data}" id="download-button" class="btn btn-download" target="_blank">
-      ${data}
-      <span class="download-box">
-        <i class="fas fa-file-download"></i>
-      </span>
-    </a>
+  <div class="d-flex justify-content-end mb-4">
+    <div class="msg_cotainer_send">
+      <a href="/tmp/${fileName}" id="download-button" class="btn btn-download" target="_blank">
+        ${fileName}
+        <span class="download-box">
+          <i class="fas fa-file-download"></i>
+        </span>
+      </a>
+      <span class="msg_time_send">${moment().format('LT')}</span>
+    </div>
+    <div class="img_cont_msg">
+    <canvas width="80" height="80" data-jdenticon-value="${socketId}" class="rounded-circle user_img_msg" style="background-color: white"></canvas>
+    </div>
+  </div>
+  `;
+}
+
+function otherUserDownloadFileBox(fileName, socketId) {
+  return `
+  <div class="d-flex justify-content-start mb-4">
+    <div class="img_cont_msg">
+    <canvas width="80" height="80" data-jdenticon-value="${socketId}" class="rounded-circle user_img_msg" style="background-color: white"></canvas>
+    </div>
+    <div class="msg_cotainer_received">
+      <a href="/tmp/${fileName}" id="download-button" class="btn btn-download" target="_blank">
+        ${fileName}
+        <span class="download-box">
+          <i class="fas fa-file-download"></i>
+        </span>
+      </a>
+      <span class="msg_time_send">${moment().format('LT')}</span>
+    </div>
   </div>
   `;
 }
@@ -76,8 +101,12 @@ function processUserInput(chatApp, socket) {
   $('#send-message').val('');
 }
 
-function processFileTransfer(chatApp, socket, data) {
-  $('#messages').append(downloadFileBox(data, socket.id));
+function processFileTransfer(fileName, socketId) {
+  $('#messages').append(downloadFileBox(fileName, socketId));
+}
+
+function otherUserProcessFileTransfer(fileName, socketId) {
+  $('#messages').append(otherUserDownloadFileBox(fileName, socketId));
 }
 
 const socket = io.connect();
@@ -175,8 +204,12 @@ $(document).ready(() => {
     return false;
   });
 
-  socket.on('postDownloadBox', (fileName) => {
-    processFileTransfer(chatApp, socket, fileName);
+  socket.on('postDownloadBox', (data) => {
+    processFileTransfer(data.fileName, data.socketId);
+  });
+
+  socket.on('otherUserPostDownloadBox', (data) => {
+    otherUserProcessFileTransfer(data.fileName, data.socketId);
   });
 
   $('#download-button').click(() => {
