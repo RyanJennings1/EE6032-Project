@@ -1,3 +1,5 @@
+let globalFileData;
+
 /*
  * Returns message HTML block.
  * Escape tags in messages to prevent XXS attacks.
@@ -111,10 +113,16 @@ function otherUserProcessFileTransfer(fileName, socketId) {
 
 const socket = io.connect();
 
-function sendFileToServer(img) {
-  socket.emit('writeFile', img);
+function sendFileToServer(fileData) {
+  // open modal
+  // socket.emit('writeFile', fileData);
+  globalFileData = fileData;
+  $('#fileNameModal').css('display', 'block');
 }
 
+/*
+ * Is called when a file is attached from the browser.
+ */
 function handleFiles(data) {
   const file = data.files[0];
   const myReader = new FileReader();
@@ -214,6 +222,21 @@ $(document).ready(() => {
 
   $('#download-button').click(() => {
     // read file from tmp/ and download
+  });
+
+  $('#close-button').click(() => {
+    $('#fileNameModal').css('display', 'none');
+  });
+
+  $('#file-name-input').submit((fileName) => {
+    console.log('File name: ', fileName.target[0].value);
+    // Send the filename to a function with fileData too
+    $('#fileNameModal').css('display', 'none');
+    socket.emit('writeFile', {
+      data: globalFileData,
+      filename: fileName.target[0].value,
+    });
+    return false;
   });
 
   /*

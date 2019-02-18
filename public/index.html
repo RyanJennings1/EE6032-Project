@@ -30,24 +30,38 @@
 						<div class="card-body msg_card_body" id="messages"></div>
 						<div class="card-footer">
 							<form id="send-form">
-							<div class="input-group">
-								<div class="input-group-prepend">
-									<input type="file" id="fileElem" accept="*" class="visually-hidden" style="display: none" onchange="handleFiles(this)">
-									<label for="fileElem">
-									    <span id="send-file" class="input-group-text attach_btn"><i class="fas fa-paperclip"></i></span>
-									</label>
+								<div class="input-group">
+									<div class="input-group-prepend">
+										<input type="file" id="fileElem" accept="*" class="visually-hidden" style="display: none" onchange="handleFiles(this)">
+										<label for="fileElem">
+											<span id="send-file" class="input-group-text attach_btn"><i class="fas fa-paperclip"></i></span>
+										</label>
+									</div>
+									<textarea id="send-message" name="" class="form-control type_msg" placeholder="Type your message..."></textarea>
+									<div class="input-group-append">
+										<button class="input-group-text send_btn">
+										<i class="fas fa-location-arrow"></i>
+										</button>
+									</div>
 								</div>
-								<textarea id="send-message" name="" class="form-control type_msg" placeholder="Type your message..."></textarea>
-								<div class="input-group-append">
-									<button class="input-group-text send_btn">
-									<i class="fas fa-location-arrow"></i>
-									</button>
-								</div>
-							</div>
 							</form>
 						</div>
 					</div>
 				</div>
+			</div>
+		</div>
+		<div id="fileNameModal" class="modal">
+			<div class="modal-content">
+				<span id='close-button' class="close">&times;</span>
+				<form id="file-name-input">
+					<div>
+						<!--<label></label>-->
+						<input type="text">
+					</div>
+					<div>
+						<button>ok</button>
+					</div>
+				</form>
 			</div>
 		</div>
 		<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
