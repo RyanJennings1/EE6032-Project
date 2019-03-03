@@ -25,6 +25,7 @@
   "scripts": {
     "pretest": "eslint --ignore-path .gitignore .",
     "fix": "eslint --fix --ignore-path .gitignore .",
-    "watch": "nodemon server.js"
+    "watch": "nodemon server.js",
+    "clean": "rm -rf public/tmp/"
   }
 }
