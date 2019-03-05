@@ -1,4 +1,5 @@
 let globalFileData;
+let globalFileContents;
 
 /*
  * Returns message HTML block.
@@ -39,7 +40,7 @@ function otherUserDivEscapedContentElement(message, socketId) {
   `;
 }
 
-function downloadFileBox(fileName, socketId) {
+function downloadFileBox(fileName, socketId, idNum) {
   return `
   <div class="d-flex justify-content-end mb-4">
     <div class="msg_cotainer_send">
@@ -49,6 +50,10 @@ function downloadFileBox(fileName, socketId) {
           <i class="fas fa-file-download"></i>
         </span>
       </a>
+      <div>
+        <button id='show-contents' data-uuid='${idNum}' onclick="toggleContent(this.getAttribute('data-uuid'))">Show Contents</button>
+      </div>
+      <pre id='${idNum}' style='display: none'></pre>
       <span class="msg_time_send">${moment().format('LT')}</span>
     </div>
     <div class="img_cont_msg">
@@ -58,7 +63,7 @@ function downloadFileBox(fileName, socketId) {
   `;
 }
 
-function otherUserDownloadFileBox(fileName, socketId) {
+function otherUserDownloadFileBox(fileName, socketId, idNum) {
   return `
   <div class="d-flex justify-content-start mb-4">
     <div class="img_cont_msg">
@@ -71,6 +76,38 @@ function otherUserDownloadFileBox(fileName, socketId) {
           <i class="fas fa-file-download"></i>
         </span>
       </a>
+      <div>
+        <button id='show-contents' data-uuid='${idNum}' onclick='toggleContent(this.getAttribute('data-uuid'))'>Show Contents</button>
+      </div>
+      <pre id='${idNum}' style='display: none'></pre>
+      <span class="msg_time_send">${moment().format('LT')}</span>
+    </div>
+  </div>
+  `;
+}
+
+function imageHTML(data, socketId) {
+  return `
+  <div class="d-flex justify-content-end mb-4">
+    <div class="msg_cotainer_send">
+      <img src=${data} style='width:100%; border-radius:20px'>
+      <span class="msg_time_send">${moment().format('LT')}</span>
+    </div>
+    <div class="img_cont_msg">
+    <canvas width="80" height="80" data-jdenticon-value="${socketId}" class="rounded-circle user_img_msg" style="background-color: white"></canvas>
+    </div>
+  </div>
+  `;
+}
+
+function otherUserImageHTML(data, socketId) {
+  return `
+  <div class="d-flex justify-content-start mb-4">
+    <div class="img_cont_msg">
+    <canvas width="80" height="80" data-jdenticon-value="${socketId}" class="rounded-circle user_img_msg" style="background-color: white"></canvas>
+    </div>
+    <div class="msg_cotainer_received">
+      <img src=${data} style='width:100%; border-radius:20px'>
       <span class="msg_time_send">${moment().format('LT')}</span>
     </div>
   </div>
@@ -104,11 +141,21 @@ function processUserInput(chatApp, socket) {
 }
 
 function processFileTransfer(fileName, socketId) {
-  $('#messages').append(downloadFileBox(fileName, socketId));
+  const randomIdNumber = Math.random().toString().split('.')[1];
+  $('#messages').append(downloadFileBox(fileName, socketId, randomIdNumber));
 }
 
 function otherUserProcessFileTransfer(fileName, socketId) {
-  $('#messages').append(otherUserDownloadFileBox(fileName, socketId));
+  const randomIdNumber = Math.random().toString().split('.')[1];
+  $('#messages').append(otherUserDownloadFileBox(fileName, socketId, randomIdNumber));
+}
+
+function postImage(fileData, socketId) {
+  $('#messages').append(imageHTML(fileData, socketId));
+}
+
+function otherUserPostImage(fileData, socketId) {
+  $('#messages').append(otherUserImageHTML(fileData, socketId));
 }
 
 const socket = io.connect();
@@ -128,8 +175,23 @@ function handleFiles(data) {
   const myReader = new FileReader();
   myReader.onloadend = (e) => {
     sendFileToServer(myReader.result);
+    globalFileContents = myReader.result;
   };
   myReader.readAsDataURL(file);
+}
+
+function toggleContent(data) {
+  // Decode from base64
+  const b64text = globalFileContents.replace(/^data:(image|text)\/(png|plain);base64,/, '');
+  const unicodeText = decodeURIComponent(escape(window.atob(b64text)));
+  $(`#${data}`).text(unicodeText);
+
+  // Toggle showing the file contents
+  if ($(`#${data}`).css('display') === 'block') {
+    $(`#${data}`).css('display', 'none');
+  } else {
+    $(`#${data}`).css('display', 'block');
+  }
 }
 
 /*
@@ -220,6 +282,14 @@ $(document).ready(() => {
     otherUserProcessFileTransfer(data.fileName, data.socketId);
   });
 
+  socket.on('postImage', (data) => {
+    postImage(data.fileData, data.socketId);
+  });
+
+  socket.on('otherUserPostImage', (data) => {
+    otherUserPostImage(data.fileData, data.socketId);
+  });
+
   $('#download-button').click(() => {
     // read file from tmp/ and download
   });
@@ -228,9 +298,17 @@ $(document).ready(() => {
     $('#fileNameModal').css('display', 'none');
   });
 
+  /*
+  $('#show-content').click(() => {
+    // set the text of fileDisplayArea to the file data
+    // $('#').data('data-uuid');
+    $('#fileDisplayArea').css('display', 'block');
+  });
+  */
+
   $('#file-name-input').submit((fileName) => {
-    console.log('File name: ', fileName.target[0].value);
     // Send the filename to a function with fileData too
+    console.log('File name: ', fileName.target[0].value);
     $('#fileNameModal').css('display', 'none');
     socket.emit('writeFile', {
       data: globalFileData,
