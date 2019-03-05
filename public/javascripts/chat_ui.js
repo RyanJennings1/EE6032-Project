@@ -121,33 +121,12 @@ function divSystemContentElement(message) {
   return $('<div class="d-flex justify-content-center mb-4"></div>').html(`<i>${message}</i>`);
 }
 
-/*
- * Handle input, add message to chat or execute command.
- */
-function processUserInput(chatApp, socket) {
-  const message = $('#send-message').val();
-
-  if (message.charAt(0) === '/') {
-    const systemMessage = chatApp.processCommand(message);
-    if (systemMessage) {
-      $('#messages').append(divSystemContentElement(systemMessage));
-    }
-  } else {
-    chatApp.sendMessage($('#room').text(), message);
-    $('#messages').append(divEscapedContentElement(message, socket.id));
-    $('#messages').scrollTop($('#messages').prop('scrollHeight'));
-  }
-  $('#send-message').val('');
+function processFileTransfer(fileName, socketId, idNum) {
+  $('#messages').append(downloadFileBox(fileName, socketId, idNum));
 }
 
-function processFileTransfer(fileName, socketId) {
-  const randomIdNumber = Math.random().toString().split('.')[1];
-  $('#messages').append(downloadFileBox(fileName, socketId, randomIdNumber));
-}
-
-function otherUserProcessFileTransfer(fileName, socketId) {
-  const randomIdNumber = Math.random().toString().split('.')[1];
-  $('#messages').append(otherUserDownloadFileBox(fileName, socketId, randomIdNumber));
+function otherUserProcessFileTransfer(fileName, socketId, idNum) {
+  $('#messages').append(otherUserDownloadFileBox(fileName, socketId, idNum));
 }
 
 function postImage(fileData, socketId) {
@@ -158,11 +137,7 @@ function otherUserPostImage(fileData, socketId) {
   $('#messages').append(otherUserImageHTML(fileData, socketId));
 }
 
-const socket = io.connect();
-
-function sendFileToServer(fileData) {
-  // open modal
-  // socket.emit('writeFile', fileData);
+function openModalBeforeSendingFileToServer(fileData) {
   globalFileData = fileData;
   $('#fileNameModal').css('display', 'block');
 }
@@ -174,12 +149,15 @@ function handleFiles(data) {
   const file = data.files[0];
   const myReader = new FileReader();
   myReader.onloadend = (e) => {
-    sendFileToServer(myReader.result);
+    openModalBeforeSendingFileToServer(myReader.result);
     globalFileContents = myReader.result;
   };
   myReader.readAsDataURL(file);
 }
 
+/*
+ * Is called when 'show content' button is pressed on download box
+ */
 function toggleContent(data) {
   // Decode from base64
   const b64text = globalFileContents.replace(/^data:(image|text)\/(png|plain);base64,/, '');
@@ -194,19 +172,15 @@ function toggleContent(data) {
   }
 }
 
+const socket = io.connect();
+
 /*
  * Start program when document ready.
  */
 $(document).ready(() => {
   const chatApp = new Chat(socket);
 
-  /*
-   * Print system message when nickname changed.
-   */
-  socket.on('nameResult', (result) => {
-    const message = (result.success ? `You are now known as ${result.name}` : result.message);
-    $('#messages').append(divSystemContentElement(message));
-  });
+  $('#send-message').focus();
 
   /*
    * Print system message when room is changed.
@@ -242,73 +216,65 @@ $(document).ready(() => {
    * Add file download box to chat.
    */
   socket.on('sendFile', (data) => {
-    console.log('captured in socket on');
-    // $('#messages').append(downloadFileBox(data));
     $('#messages').append(divEscapedContentElement(data, socket.id));
   });
 
-  socket.on('rooms', (rooms) => {
-    $('#room-list').empty();
-
-    for (let room in rooms) {
-      room = room.substring(1, room.length);
-      if (room != '') {
-        $('#room-list').append(divEscapedContentElement(room, socket.id));
-      }
-    }
-
-    $('#room-list div').click(() => {
-      chatApp.processCommand(`/join ${$(this).text()}`);
-      $('#send-message').focus();
-    });
-  });
-
-  setInterval(() => {
-    socket.emit('rooms');
-  }, 1000);
-
-  $('#send-message').focus();
-
-  $('#send-form').submit(() => {
-    processUserInput(chatApp, socket);
-    return false;
-  });
-
+  /*
+   * Append download box to screen
+   */
   socket.on('postDownloadBox', (data) => {
-    processFileTransfer(data.fileName, data.socketId);
+    processFileTransfer(data.fileName, data.socketId, data.idNum);
   });
 
+  /*
+   * Append download box to screen for other user
+   */
   socket.on('otherUserPostDownloadBox', (data) => {
-    otherUserProcessFileTransfer(data.fileName, data.socketId);
+    otherUserProcessFileTransfer(data.fileName, data.socketId, data.idNum);
   });
 
+  /*
+   * Append image to screen
+   */
   socket.on('postImage', (data) => {
     postImage(data.fileData, data.socketId);
   });
 
+  /*
+   * Append image to screen for other user
+   */
   socket.on('otherUserPostImage', (data) => {
     otherUserPostImage(data.fileData, data.socketId);
   });
 
-  $('#download-button').click(() => {
-    // read file from tmp/ and download
+  /*
+   * Send message
+   */
+  $('#send-form').submit(() => {
+    const message = $('#send-message').val();
+
+    chatApp.sendMessage($('#room').text(), message);
+
+    $('#messages').append(divEscapedContentElement(message, socket.id));
+    $('#messages').scrollTop($('#messages').prop('scrollHeight'));
+
+    $('#send-message').val('');
+    return false;
   });
 
+  /*
+   * close the filename modal
+   */
   $('#close-button').click(() => {
     $('#fileNameModal').css('display', 'none');
   });
 
   /*
-  $('#show-content').click(() => {
-    // set the text of fileDisplayArea to the file data
-    // $('#').data('data-uuid');
-    $('#fileDisplayArea').css('display', 'block');
-  });
-  */
-
+   * When a filename is submitted from the modal,
+   * send the file data via sockets
+   */
   $('#file-name-input').submit((fileName) => {
-    // Send the filename to a function with fileData too
-    console.log('File name: ', fileName.target[0].value);
+    // Send the filename and file data to the backend
     $('#fileNameModal').css('display', 'none');
     socket.emit('writeFile', {
       data: globalFileData,
