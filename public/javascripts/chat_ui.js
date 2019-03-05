@@ -86,10 +86,11 @@ function otherUserDownloadFileBox(fileName, socketId, idNum) {
   `;
 }
 
-function imageHTML(data, socketId) {
+function imageHTML(data, socketId, filename) {
   return `
   <div class="d-flex justify-content-end mb-4">
     <div class="msg_cotainer_send">
+      ${filename}
       <img src=${data} style='width:100%; border-radius:20px'>
       <span class="msg_time_send">${moment().format('LT')}</span>
     </div>
@@ -100,13 +101,14 @@ function imageHTML(data, socketId) {
   `;
 }
 
-function otherUserImageHTML(data, socketId) {
+function otherUserImageHTML(data, socketId, filename) {
   return `
   <div class="d-flex justify-content-start mb-4">
     <div class="img_cont_msg">
     <canvas width="80" height="80" data-jdenticon-value="${socketId}" class="rounded-circle user_img_msg" style="background-color: white"></canvas>
     </div>
     <div class="msg_cotainer_received">
+      ${filename}
       <img src=${data} style='width:100%; border-radius:20px'>
       <span class="msg_time_send">${moment().format('LT')}</span>
     </div>
@@ -129,12 +131,12 @@ function otherUserProcessFileTransfer(fileName, socketId, idNum) {
   $('#messages').append(otherUserDownloadFileBox(fileName, socketId, idNum));
 }
 
-function postImage(fileData, socketId) {
-  $('#messages').append(imageHTML(fileData, socketId));
+function postImage(fileData, socketId, fileName) {
+  $('#messages').append(imageHTML(fileData, socketId, fileName));
 }
 
-function otherUserPostImage(fileData, socketId) {
-  $('#messages').append(otherUserImageHTML(fileData, socketId));
+function otherUserPostImage(fileData, socketId, fileName) {
+  $('#messages').append(otherUserImageHTML(fileData, socketId, fileName));
 }
 
 function openModalBeforeSendingFileToServer(fileData) {
@@ -237,14 +239,14 @@ $(document).ready(() => {
    * Append image to screen
    */
   socket.on('postImage', (data) => {
-    postImage(data.fileData, data.socketId);
+    postImage(data.fileData, data.socketId, data.fileName);
   });
 
   /*
    * Append image to screen for other user
    */
   socket.on('otherUserPostImage', (data) => {
-    otherUserPostImage(data.fileData, data.socketId);
+    otherUserPostImage(data.fileData, data.socketId, data.fileName);
   });
 
   /*
