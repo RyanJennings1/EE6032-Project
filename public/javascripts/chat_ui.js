@@ -1,5 +1,5 @@
 let globalFileData;
-let globalFileContents;
+const imageExtensions = new Set(['png', 'jpg', 'jpeg']);
 
 /*
  * Returns message HTML block.
@@ -40,11 +40,11 @@ function otherUserDivEscapedContentElement(message, socketId) {
   `;
 }
 
-function downloadFileBox(fileName, socketId, idNum) {
+function downloadFileBox(fileName, socketId, idNum, fileText) {
   return `
   <div class="d-flex justify-content-end mb-4">
     <div class="msg_cotainer_send">
-      <a href="/tmp/${fileName}" id="download-button" class="btn btn-download" target="_blank">
+      <a id="download-button" class="btn btn-download" target="_blank">
         ${fileName}
         <span class="download-box">
           <i class="fas fa-file-download"></i>
@@ -53,7 +53,9 @@ function downloadFileBox(fileName, socketId, idNum) {
       <div>
         <button id='show-contents' data-uuid='${idNum}' onclick="toggleContent(this.getAttribute('data-uuid'))">Show Contents</button>
       </div>
-      <pre id='${idNum}' style='display: none'></pre>
+      <pre id='${idNum}' style='display: none'>
+      ${fileText}
+      </pre>
       <span class="msg_time_send">${moment().format('LT')}</span>
     </div>
     <div class="img_cont_msg">
@@ -63,23 +65,25 @@ function downloadFileBox(fileName, socketId, idNum) {
   `;
 }
 
-function otherUserDownloadFileBox(fileName, socketId, idNum) {
+function otherUserDownloadFileBox(fileName, socketId, idNum, fileText) {
   return `
   <div class="d-flex justify-content-start mb-4">
     <div class="img_cont_msg">
     <canvas width="80" height="80" data-jdenticon-value="${socketId}" class="rounded-circle user_img_msg" style="background-color: white"></canvas>
     </div>
     <div class="msg_cotainer_received">
-      <a href="/tmp/${fileName}" id="download-button" class="btn btn-download" target="_blank">
+      <a id="download-button" class="btn btn-download" target="_blank">
         ${fileName}
         <span class="download-box">
           <i class="fas fa-file-download"></i>
         </span>
       </a>
       <div>
-        <button id='show-contents' data-uuid='${idNum}' onclick='toggleContent(this.getAttribute('data-uuid'))'>Show Contents</button>
+        <button id='show-contents' data-uuid='${idNum}' onclick="toggleContent(this.getAttribute('data-uuid'))">Show Contents</button>
       </div>
-      <pre id='${idNum}' style='display: none'></pre>
+      <pre id='${idNum}' style='display: none'>
+      ${fileText}
+      </pre>
       <span class="msg_time_send">${moment().format('LT')}</span>
     </div>
   </div>
@@ -123,25 +127,16 @@ function divSystemContentElement(message) {
   return $('<div class="d-flex justify-content-center mb-4"></div>').html(`<i>${message}</i>`);
 }
 
-function processFileTransfer(fileName, socketId, idNum) {
-  $('#messages').append(downloadFileBox(fileName, socketId, idNum));
-}
-
-function otherUserProcessFileTransfer(fileName, socketId, idNum) {
-  $('#messages').append(otherUserDownloadFileBox(fileName, socketId, idNum));
-}
-
-function postImage(fileData, socketId, fileName) {
-  $('#messages').append(imageHTML(fileData, socketId, fileName));
-}
-
-function otherUserPostImage(fileData, socketId, fileName) {
-  $('#messages').append(otherUserImageHTML(fileData, socketId, fileName));
-}
-
-function openModalBeforeSendingFileToServer(fileData) {
-  globalFileData = fileData;
+/*
+function openModalBeforeSendingFileToServer() {
+  // globalFileData = fileData;
   $('#fileNameModal').css('display', 'block');
+}
+*/
+
+function b64toUnicode(data) {
+  const b64text = data.replace(/^data:(image|text)\/(png|plain);base64,/, '');
+  return decodeURIComponent(escape(window.atob(b64text)));
 }
 
 /*
@@ -149,23 +144,21 @@ function openModalBeforeSendingFileToServer(fileData) {
  */
 function handleFiles(data) {
   const file = data.files[0];
-  const myReader = new FileReader();
-  myReader.onloadend = (e) => {
-    openModalBeforeSendingFileToServer(myReader.result);
-    globalFileContents = myReader.result;
+  const reader = new FileReader();
+
+  reader.onloadend = () => {
+    globalFileData = reader.result;
+    // open modal for selecting filename before sending to server
+    $('#fileNameModal').css('display', 'block');
+    // openModalBeforeSendingFileToServer();
   };
-  myReader.readAsDataURL(file);
+  reader.readAsDataURL(file);
 }
 
 /*
  * Is called when 'show content' button is pressed on download box
  */
 function toggleContent(data) {
-  // Decode from base64
-  const b64text = globalFileContents.replace(/^data:(image|text)\/(png|plain);base64,/, '');
-  const unicodeText = decodeURIComponent(escape(window.atob(b64text)));
-  $(`#${data}`).text(unicodeText);
-
   // Toggle showing the file contents
   if ($(`#${data}`).css('display') === 'block') {
     $(`#${data}`).css('display', 'none');
@@ -222,31 +215,17 @@ $(document).ready(() => {
   });
 
   /*
-   * Append download box to screen
-   */
-  socket.on('postDownloadBox', (data) => {
-    processFileTransfer(data.fileName, data.socketId, data.idNum);
-  });
-
-  /*
    * Append download box to screen for other user
    */
   socket.on('otherUserPostDownloadBox', (data) => {
-    otherUserProcessFileTransfer(data.fileName, data.socketId, data.idNum);
-  });
-
-  /*
-   * Append image to screen
-   */
-  socket.on('postImage', (data) => {
-    postImage(data.fileData, data.socketId, data.fileName);
+    $('#messages').append(otherUserDownloadFileBox(data.fileName, data.socketId, data.idNum, b64toUnicode(data.fileData)));
   });
 
   /*
    * Append image to screen for other user
    */
   socket.on('otherUserPostImage', (data) => {
-    otherUserPostImage(data.fileData, data.socketId, data.fileName);
+    $('#messages').append(otherUserImageHTML(data.data, data.socketId, data.fileName));
   });
 
   /*
@@ -265,24 +244,55 @@ $(document).ready(() => {
   });
 
   /*
-   * close the filename modal
-   */
-  $('#close-button').click(() => {
-    $('#fileNameModal').css('display', 'none');
-  });
-
-  /*
    * When a filename is submitted from the modal,
    * send the file data via sockets
    */
   $('#file-name-input').submit((fileName) => {
     // Send the filename and file data to the backend
     $('#fileNameModal').css('display', 'none');
-    socket.emit('writeFile', {
+    const randomIdNumber = Math.random().toString().split('.')[1];
+
+    // Analyse file extension here on client rather than server
+    let fileExtension = (globalFileData.split(';')[0]).split('/')[1];
+    if (fileExtension === 'plain') fileExtension = 'txt';
+    console.log('got file extension: ', fileExtension);
+
+    const message = {
+      fileName: `${fileName.target[0].value}.${fileExtension}`,
       data: globalFileData,
-      filename: fileName.target[0].value,
-    });
+      idNum: randomIdNumber,
+      socketId: socket.id,
+    };
+
+    if (imageExtensions.has(fileExtension)) {
+      console.log('Its an image');
+      chatApp.sendImage(message);
+
+      $('#messages').append(
+        imageHTML(globalFileData,
+          socket.id,
+          `${fileName.target[0].value}.${fileExtension}`)
+      );
+    } else {
+      console.log('Its a file');
+      chatApp.sendFile(message);
+
+      $('#messages').append(
+        downloadFileBox(`${fileName.target[0].value}.${fileExtension}`,
+          socket.id,
+          randomIdNumber,
+          b64toUnicode(globalFileData))
+      );
+    }
+
     return false;
+  });
+
+  /*
+   * close the filename modal
+   */
+  $('#close-button').click(() => {
+    $('#fileNameModal').css('display', 'none');
   });
 
   /*
