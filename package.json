@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "data-urls": "^1.1.0",
+    "file-saver": "^2.0.1",
     "image-data-uri": "^2.0.0",
     "mime-types": "~2.1.0",
     "socket.io": "~2.2.0",

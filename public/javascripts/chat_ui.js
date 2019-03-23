@@ -1,5 +1,4 @@
 let globalFileData;
-const imageExtensions = new Set(['png', 'jpg', 'jpeg']);
 
 /*
  * Returns message HTML block.
@@ -10,6 +9,7 @@ function divEscapedContentElement(message, socketId) {
   message = message.replace(/>/, '&gt');
   message = message.replace(/</, '&lt');
 
+  // Content for the sender to see on their screen
   return `
   <div class="d-flex justify-content-end mb-4">
     <div class="msg_cotainer_send">
@@ -40,11 +40,12 @@ function otherUserDivEscapedContentElement(message, socketId) {
   `;
 }
 
-function downloadFileBox(fileName, socketId, idNum, fileText) {
+function downloadFileBox(fileName, socketId, idNum, fileText, mimetype) {
+  // Put a backslash before apostrohpes? maybe transfer fileText as a blob
   return `
   <div class="d-flex justify-content-end mb-4">
     <div class="msg_cotainer_send">
-      <a id="download-button" class="btn btn-download" target="_blank">
+      <a href='#' id="download-button" class="btn btn-download" onclick="downloadFile({data: \`${fileText}\`, name: \`${fileName}\`, mimetype: \`${mimetype}\`})">
         ${fileName}
         <span class="download-box">
           <i class="fas fa-file-download"></i>
@@ -65,14 +66,14 @@ function downloadFileBox(fileName, socketId, idNum, fileText) {
   `;
 }
 
-function otherUserDownloadFileBox(fileName, socketId, idNum, fileText) {
+function otherUserDownloadFileBox(fileName, socketId, idNum, fileText, mimetype) {
   return `
   <div class="d-flex justify-content-start mb-4">
     <div class="img_cont_msg">
     <canvas width="80" height="80" data-jdenticon-value="${socketId}" class="rounded-circle user_img_msg" style="background-color: white"></canvas>
     </div>
     <div class="msg_cotainer_received">
-      <a id="download-button" class="btn btn-download" target="_blank">
+      <a href='#' id="download-button" class="btn btn-download" onclick="downloadFile({data: \`${fileText}\`, name: \`${fileName}\`, mimetype: \`${mimetype}\`})">
         ${fileName}
         <span class="download-box">
           <i class="fas fa-file-download"></i>
@@ -127,15 +128,9 @@ function divSystemContentElement(message) {
   return $('<div class="d-flex justify-content-center mb-4"></div>').html(`<i>${message}</i>`);
 }
 
-/*
-function openModalBeforeSendingFileToServer() {
-  // globalFileData = fileData;
-  $('#fileNameModal').css('display', 'block');
-}
-*/
-
 function b64toUnicode(data) {
-  const b64text = data.replace(/^data:(image|text)\/(png|plain);base64,/, '');
+  // const b64text = data.replace(/^data:(image|text)\/(png|plain);base64,/, '');
+  const b64text = data.replace(/^data:.*\/.*;base64,/, '');
   return decodeURIComponent(escape(window.atob(b64text)));
 }
 
@@ -150,7 +145,6 @@ function handleFiles(data) {
     globalFileData = reader.result;
     // open modal for selecting filename before sending to server
     $('#fileNameModal').css('display', 'block');
-    // openModalBeforeSendingFileToServer();
   };
   reader.readAsDataURL(file);
 }
@@ -165,6 +159,11 @@ function toggleContent(data) {
   } else {
     $(`#${data}`).css('display', 'block');
   }
+}
+
+function downloadFile(fileData) {
+  const blob = new Blob([fileData.data], { type: `${fileData.mimetype};charset=utf-8` });
+  saveAs(blob, fileData.name);
 }
 
 const socket = io.connect();
@@ -187,11 +186,11 @@ $(document).ready(() => {
 
   /*
    * Add basic message to chat.
-   */
   socket.on('message', (message) => {
     const newElement = $('<div></div>').text(message.text);
     $('#messages').append(newElement);
   });
+   */
 
   /*
    * Add a system message to the chat.
@@ -218,7 +217,7 @@ $(document).ready(() => {
    * Append download box to screen for other user
    */
   socket.on('otherUserPostDownloadBox', (data) => {
-    $('#messages').append(otherUserDownloadFileBox(data.fileName, data.socketId, data.idNum, b64toUnicode(data.fileData)));
+    $('#messages').append(otherUserDownloadFileBox(data.fileName, data.socketId, data.idNum, b64toUnicode(data.fileData), data.mimetype));
   });
 
   /*
@@ -255,17 +254,18 @@ $(document).ready(() => {
     // Analyse file extension here on client rather than server
     let fileExtension = (globalFileData.split(';')[0]).split('/')[1];
     if (fileExtension === 'plain') fileExtension = 'txt';
-    console.log('got file extension: ', fileExtension);
+    const mimeType = (globalFileData.split(';')[0].split(':')[1]);
 
     const message = {
       fileName: `${fileName.target[0].value}.${fileExtension}`,
       data: globalFileData,
       idNum: randomIdNumber,
       socketId: socket.id,
+      mimetype: mimeType,
     };
 
-    if (imageExtensions.has(fileExtension)) {
-      console.log('Its an image');
+    // Determine if its an image from its mime type
+    if (mimeType.split('/')[0] === 'image') {
       chatApp.sendImage(message);
 
       $('#messages').append(
@@ -274,14 +274,14 @@ $(document).ready(() => {
           `${fileName.target[0].value}.${fileExtension}`)
       );
     } else {
-      console.log('Its a file');
       chatApp.sendFile(message);
 
       $('#messages').append(
         downloadFileBox(`${fileName.target[0].value}.${fileExtension}`,
           socket.id,
           randomIdNumber,
-          b64toUnicode(globalFileData))
+          b64toUnicode(globalFileData),
+          mimeType)
       );
     }
 
@@ -289,7 +289,7 @@ $(document).ready(() => {
   });
 
   /*
-   * close the filename modal
+   * Close the filename modal
    */
   $('#close-button').click(() => {
     $('#fileNameModal').css('display', 'none');
