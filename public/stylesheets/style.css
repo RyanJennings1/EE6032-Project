@@ -28,6 +28,18 @@ body, html {
 	margin-bottom: 1em;
 }
 
+#lockimg {
+	position: absolute;
+	margin: auto;
+	width: 20%;
+	opacity: 0.25;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	display: none;
+}
+
 .chat {
 	margin-top: auto;
 	margin-bottom: auto;

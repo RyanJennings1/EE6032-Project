@@ -306,3 +306,13 @@ $(document).ready(() => {
     }
   });
 });
+
+const checkbox = document.getElementById('encryptChat')
+
+checkbox.addEventListener('change', (event) => {
+  if (event.target.checked) {
+    $('#lockimg').css('display', 'block');
+  } else {
+    $('#lockimg').css('display', 'none');
+  }
+})
