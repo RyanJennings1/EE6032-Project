@@ -244,6 +244,18 @@ $(document).ready(() => {
     $('#messages').append(divSystemContentElement('Room changed.'));
   });
 
+  socket.on('initiateEncryptionDisplay', () => {
+    $('#lockimg').css('display', 'block');
+    $('#body').css('background', 'gray');
+    $('#encryptChat').prop('checked', true);
+  });
+
+  socket.on('stopEncryptionDisplay', () => {
+    $('#lockimg').css('display', 'none');
+    $('#body').css('background', 'linear-gradient(to right, #91EAE4, #86A8E7, #7F7FD5)');
+    $('#encryptChat').prop('checked', false);
+  });
+
   /*
    * Add basic message to chat.
   socket.on('message', (message) => {
@@ -369,9 +381,12 @@ $(document).ready(() => {
     if (event.target.checked) {
       $('#lockimg').css('display', 'block');
       $('#body').css('background', 'gray');
+      // turn on encryption for the other user too
+      socket.emit('turnOnEncryption');
     } else {
       $('#lockimg').css('display', 'none');
       $('#body').css('background', 'linear-gradient(to right, #91EAE4, #86A8E7, #7F7FD5)');
+      socket.emit('turnOffEncryption');
     }
   });
 
