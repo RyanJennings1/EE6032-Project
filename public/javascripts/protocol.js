@@ -117,6 +117,8 @@ function step2(socket) {
                         console.log('Hashed AES Key: ', aesKeyHash);
                         step3(passA, passB, aesKeyHash, socket);
                       });
+                    } else {
+                      console.error('[Invalid Digital Signature]');
                     }
                   });
                 });
@@ -219,6 +221,8 @@ function step4(socket) {
                           });
                         });
                       });
+                    } else {
+                      console.error('[Invalid Digital Signature]');
                     }
                   });
                 });
