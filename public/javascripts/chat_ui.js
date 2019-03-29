@@ -368,8 +368,10 @@ $(document).ready(() => {
   $('#encryptChat').change((event) => {
     if (event.target.checked) {
       $('#lockimg').css('display', 'block');
+      $('#body').css('background', 'gray');
     } else {
       $('#lockimg').css('display', 'none');
+      $('#body').css('background', 'linear-gradient(to right, #91EAE4, #86A8E7, #7F7FD5)');
     }
   });
 
