@@ -166,12 +166,72 @@ function downloadFile(fileData) {
   saveAs(blob, fileData.name);
 }
 
+function ab2str(buf) {
+  return String.fromCharCode.apply(null, new Uint8Array(buf));
+}
+
+function str2ab(str) {
+  const buf = new ArrayBuffer(str.length * 2); // 2 bytes for each char
+  const bufView = new Uint8Array(buf);
+  for (let i = 0, strLen = str.length; i < strLen; i += 1) {
+    bufView[i] = str.charCodeAt(i);
+  }
+  return buf;
+}
+
 const socket = io.connect();
 
 /*
  * Start program when document ready.
  */
 $(document).ready(() => {
+  // Initialise protocol here to get keys
+  // start off protocol by creating rsa public and private keys (async)
+  initiateProtocol(socket);
+
+  // receive remote public key from other client (async)
+  getRemotePublicKey(socket);
+
+  // Step 1: A -> B: A, B, { PassA, { H(PassA) }Ka-1 }Kb
+  step1(socket);
+
+  // Step 2: B: Kab = H(PassA || PassB)
+  step2(socket);
+
+  // Step 3 called from within step2
+  // B -> A: B, A, { PassB, { PassA}Kab, { H(PassB, { PassA }Kb) }Kb-1 }Ka
+
+  // Step 4: A: Kab = H(PassA || PassB)
+  step4(socket);
+
+  /*
+  // Step 5: A -> B: A, B, { PassB }Kab
+  */
+  // initProt(socket);
+  /*
+  socket.on('START', () => {
+    console.log('PROTOCOL RECEIVED ...');
+    // generate rsa public and private keys
+    generateRSA().then((key) => {
+      console.log('Public RSA Key: ', key.publicKey);
+      console.log('Private RSA Key: ', key.privateKey);
+      exportRSA(key.publicKey).then((exportedKey) => {
+        console.log('exported public key: ', exportedKey);
+        // socket.emit('sendPublicKey', 'hi :)');
+        socket.emit('sendPublicKey', {
+          publicrsa: key.publicKey,
+          privatersa: key.privateKey,
+          exportkey: exportedKey,
+        });
+      });
+    });
+  });
+  */
+  // getOtherPubKey(socket);
+  socket.on('recPublicKey', (data) => {
+    console.log('Key has been received correctly', data);
+  });
+
   const chatApp = new Chat(socket);
 
   $('#send-message').focus();
@@ -232,6 +292,16 @@ $(document).ready(() => {
    */
   $('#send-form').submit(() => {
     const message = $('#send-message').val();
+    // hashSHA(str2ab(message)).then(hash => console.log(ab2str(hash)));
+
+    if (!aesKab) {
+      console.log('aesKab is null ------------');
+      // start encryption
+      socket.emit('encryptProtocol');
+    } else {
+      console.log('aesKab has a value ++++++++');
+      // use encryption key already stored
+    }
 
     chatApp.sendMessage($('#room').text(), message);
 
@@ -295,6 +365,18 @@ $(document).ready(() => {
     $('#fileNameModal').css('display', 'none');
   });
 
+  $('#encryptChat').change((event) => {
+    if (event.target.checked) {
+      $('#lockimg').css('display', 'block');
+    } else {
+      $('#lockimg').css('display', 'none');
+    }
+  });
+
+  setInterval(() => {
+    socket.emit('rooms');
+  }, 1000);
+
   /*
    * Send message on 'Enter' press.
    */
@@ -306,13 +388,3 @@ $(document).ready(() => {
     }
   });
 });
-
-const checkbox = document.getElementById('encryptChat')
-
-checkbox.addEventListener('change', (event) => {
-  if (event.target.checked) {
-    $('#lockimg').css('display', 'block');
-  } else {
-    $('#lockimg').css('display', 'none');
-  }
-})
