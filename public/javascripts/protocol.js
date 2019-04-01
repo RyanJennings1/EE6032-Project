@@ -1,8 +1,8 @@
-// starts the protocol off by creating private and public keys
+// Starts the protocol off by creating private and public keys
 // then sends the public key off to the other client
 function initiateProtocol(socket) {
   socket.on('startRSA', () => {
-    console.log('PROTOCOL RECEIVED ...');
+    console.log('Protocol received ...');
     generateRSA().then((key) => {
       console.log('Public RSA Key: ', key.publicKey);
       console.log('Private RSA Key: ', key.privateKey);
@@ -18,29 +18,7 @@ function initiateProtocol(socket) {
   });
 }
 
-/*
-function initProt(socket) {
-  socket.on('START', () => {
-    console.log('PROTOCOL RECEIVED ...');
-    // $('#messages').text('TESTING');
-    // generate rsa public and private keys
-    generateRSA().then((key) => {
-      console.log('Public RSA Key: ', key.publicKey);
-      console.log('Private RSA Key: ', key.privateKey);
-      exportRSA(key.publicKey).then((exportedKey) => {
-        console.log('exported public key: ', exportedKey);
-        socket.emit('sendPublicKey', {
-          publicrsa: key.publicKey,
-          privatersa: key.privateKey,
-          exportkey: exportedKey,
-        });
-      });
-    });
-  });
-}
-*/
-
-// receive other clients public key
+// Receive other clients public key
 function getRemotePublicKey(socket) {
   socket.on('receivePublicKey', (msg) => {
     const rsaExportedKey_2 = msg;
@@ -51,7 +29,7 @@ function getRemotePublicKey(socket) {
   });
 }
 
-// completes step1 of encryption protocol
+// Completes step1 of encryption protocol
 function step1(socket) {
   socket.on('step1', () => {
     console.log('step1 starting');
@@ -82,7 +60,7 @@ function step1(socket) {
   });
 }
 
-// completes step 2 of encryption protocol
+// Completes step 2 of encryption protocol
 function step2(socket) {
   socket.on('step2', (msg) => {
     console.log('step2 starting');
@@ -110,7 +88,7 @@ function step2(socket) {
                       console.log('Pass B: ', passB);
                       const aesKey = new Uint8Array(passA.length + passB.length);
                       aesKey.set(passA);
-                      aesKey.set(passB, passA.length); // PassA||PassB
+                      aesKey.set(passB, passA.length); // PassA || PassB
                       console.log('Aes Key: ', aesKey);
                       hashSHA(aesKey).then((hashed) => { // hash newly created AES Key
                         aesKeyHash = hashed; // Kab = H(PassA || PassB)
@@ -131,7 +109,7 @@ function step2(socket) {
   });
 }
 
-// completes step 3 of encryption protocol
+// Completes step 3 of encryption protocol
 function step3(passA, passB, aesKeyHash, socket) {
   console.log('step3 starting');
   iv = crypto.getRandomValues(new Uint8Array(12));
@@ -169,7 +147,7 @@ function step3(passA, passB, aesKeyHash, socket) {
   });
 }
 
-// completes step 4 of encryption protocol
+// Completes step 4 of encryption protocol
 function step4(socket) {
   socket.on('step4', (msg) => {
     console.log('step4 starting');
@@ -214,7 +192,7 @@ function step4(socket) {
                             console.log('Decrypted PassA: ', newPassA);
                             if (newPassA.sort().join(',') === passA.sort().join(',')) {
                               console.log('Encrption Protocol has run Successfully!');
-                              socket.emit('encryptionSuccessful');
+                              // socket.emit('encryptionFinished');
                             } else {
                               console.log("Protocol failed: PassA's are NOT the same");
                             }
@@ -232,5 +210,12 @@ function step4(socket) {
         });
       });
     });
+  });
+}
+
+// TODO
+function step5(socket) {
+  socket.on('step5', () => {
+    //
   });
 }

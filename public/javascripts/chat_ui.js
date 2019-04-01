@@ -1,4 +1,5 @@
 let globalFileData;
+let globalMessageData = null;
 
 /*
  * Returns message HTML block.
@@ -6,8 +7,8 @@ let globalFileData;
  * Use Moment.js to get locale time.
  */
 function divEscapedContentElement(message, socketId) {
-  message = message.replace(/>/, '&gt');
-  message = message.replace(/</, '&lt');
+  message = message.replace(/>/g, '&gt');
+  message = message.replace(/</g, '&lt');
 
   // Content for the sender to see on their screen
   return `
@@ -24,8 +25,8 @@ function divEscapedContentElement(message, socketId) {
 }
 
 function otherUserDivEscapedContentElement(message, socketId) {
-  message = message.replace(/>/, '&gt');
-  message = message.replace(/</, '&lt');
+  message = message.replace(/>/g, '&gt');
+  message = message.replace(/</g, '&lt');
 
   return `
   <div class="d-flex justify-content-start mb-4">
@@ -198,43 +199,23 @@ $(document).ready(() => {
   // Step 2: B: Kab = H(PassA || PassB)
   step2(socket);
 
-  // Step 3 called from within step2
-  // B -> A: B, A, { PassB, { PassA}Kab, { H(PassB, { PassA }Kb) }Kb-1 }Ka
+  // Step 3 (called from within step2)
+  // B -> A: B, A, { PassB, { PassA }Kab, { H(PassB, { PassA }Kb) }Kb-1 }Ka
 
   // Step 4: A: Kab = H(PassA || PassB)
   step4(socket);
 
-  /*
   // Step 5: A -> B: A, B, { PassB }Kab
-  */
-  // initProt(socket);
-  /*
-  socket.on('START', () => {
-    console.log('PROTOCOL RECEIVED ...');
-    // generate rsa public and private keys
-    generateRSA().then((key) => {
-      console.log('Public RSA Key: ', key.publicKey);
-      console.log('Private RSA Key: ', key.privateKey);
-      exportRSA(key.publicKey).then((exportedKey) => {
-        console.log('exported public key: ', exportedKey);
-        // socket.emit('sendPublicKey', 'hi :)');
-        socket.emit('sendPublicKey', {
-          publicrsa: key.publicKey,
-          privatersa: key.privateKey,
-          exportkey: exportedKey,
-        });
-      });
-    });
-  });
-  */
-  // getOtherPubKey(socket);
-  socket.on('recPublicKey', (data) => {
-    console.log('Key has been received correctly', data);
-  });
+  // TODO
+  step5(socket);
 
   const chatApp = new Chat(socket);
 
   $('#send-message').focus();
+
+  setInterval(() => {
+    socket.emit('rooms');
+  }, 1000);
 
   /*
    * Print system message when room is changed.
@@ -299,23 +280,55 @@ $(document).ready(() => {
     $('#messages').append(otherUserImageHTML(data.data, data.socketId, data.fileName));
   });
 
+  socket.on('receiveEncryptedMessage', (message) => {
+    const decoder = new TextDecoder();
+    const messageArrayBuffer = new Uint8Array(Object.values(message));
+    console.log('message array buffer: ', messageArrayBuffer);
+    decryptAES(aesKab, iv, messageArrayBuffer).then((decryptedMessage) => {
+      console.log('decryted Message: ', decryptedMessage);
+      const decodedMessage = decoder.decode(decryptedMessage);
+      console.log('decoded Message: ', decodedMessage);
+      const finalMessage = JSON.parse(decodedMessage);
+      $('#messages').append(otherUserDivEscapedContentElement(finalMessage.message, finalMessage.socketId));
+    });
+  });
+
+  socket.on('receiveEncryptedImage', (data) => {
+    const decoder = new TextDecoder();
+    const messageArrayBuffer = new Uint8Array(Object.values(data));
+    decryptAES(aesKab, iv, messageArrayBuffer).then((decryptedMessage) => {
+      const decodedMessage = JSON.parse(decoder.decode(decryptedMessage));
+      console.log('decoded Message: ', decodedMessage);
+      $('#messages').append(otherUserImageHTML(decodedMessage.data, decodedMessage.socketId, decodedMessage.fileName));
+    });
+  });
+
+  socket.on('encryptionFinishedMessage', () => {
+    chatApp.sendEncryptedMessage(globalMessageData);
+    globalMessageData = null;
+  });
+
   /*
    * Send message
    */
   $('#send-form').submit(() => {
     const message = $('#send-message').val();
-    // hashSHA(str2ab(message)).then(hash => console.log(ab2str(hash)));
 
-    if (!aesKab) {
-      console.log('aesKab is null ------------');
-      // start encryption
-      socket.emit('encryptProtocol');
+    if ($('#encryptChat').prop('checked')) {
+      if (aesKab) {
+        // use encryption key already stored
+        console.log('aesKab has a value ++++++++');
+        // chatApp.sendEncryptedMessage(message);
+        chatApp.sendEncryptedMessage({ message: message, socketId: socket.id });
+      } else {
+        // start encryption and send message afterwards
+        console.log('aesKab is null ------------');
+        globalMessageData = message;
+        socket.emit('encryptProtocol');
+      }
     } else {
-      console.log('aesKab has a value ++++++++');
-      // use encryption key already stored
+      chatApp.sendMessage($('#room').text(), message);
     }
-
-    chatApp.sendMessage($('#room').text(), message);
 
     $('#messages').append(divEscapedContentElement(message, socket.id));
     $('#messages').scrollTop($('#messages').prop('scrollHeight'));
@@ -348,7 +361,19 @@ $(document).ready(() => {
 
     // Determine if its an image from its mime type
     if (mimeType.split('/')[0] === 'image') {
-      chatApp.sendImage(message);
+      if ($('#encryptChat').prop('checked')) {
+        if (aesKab) {
+          // use encryption key already stored
+          console.log('aesKab has a value ++++++++');
+          chatApp.sendEncryptedImage(message);
+        } else {
+          // start encryption and send image afterwards
+          console.error('aesKab is null ------------');
+          // socket.emit('encryptProtocol');
+        }
+      } else {
+        chatApp.sendImage(message);
+      }
 
       $('#messages').append(
         imageHTML(globalFileData,
@@ -356,7 +381,19 @@ $(document).ready(() => {
           `${fileName.target[0].value}.${fileExtension}`)
       );
     } else {
-      chatApp.sendFile(message);
+      if ($('#encryptChat').prop('checked')) {
+        if (aesKab) {
+          // use encryption key already stored
+          console.log('aesKab has a value ++++++++');
+          chatApp.sendEncryptedFile(message);
+        } else {
+          // start encryption and send file afterwards
+          console.log('aesKab is null ------------');
+          socket.emit('encryptProtocol');
+        }
+      } else {
+        chatApp.sendFile(message);
+      }
 
       $('#messages').append(
         downloadFileBox(`${fileName.target[0].value}.${fileExtension}`,
@@ -383,16 +420,13 @@ $(document).ready(() => {
       $('#body').css('background', 'gray');
       // turn on encryption for the other user too
       socket.emit('turnOnEncryption');
+      if (!aesKab) { socket.emit('encryptProtocol'); }
     } else {
       $('#lockimg').css('display', 'none');
       $('#body').css('background', 'linear-gradient(to right, #91EAE4, #86A8E7, #7F7FD5)');
       socket.emit('turnOffEncryption');
     }
   });
-
-  setInterval(() => {
-    socket.emit('rooms');
-  }, 1000);
 
   /*
    * Send message on 'Enter' press.
