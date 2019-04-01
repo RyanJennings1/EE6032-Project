@@ -1,5 +1,10 @@
+/*
+ * Name: chat_ui.js
+ *
+ * Client side chat code that handles sending data and displaying data to the UI
+ */
+
 let globalFileData;
-let globalMessageData = null;
 
 /*
  * Returns message HTML block.
@@ -24,6 +29,11 @@ function divEscapedContentElement(message, socketId) {
   `;
 }
 
+/*
+ * Returns message HMTL block for other user view
+ * Escape tags in messages to prevent XXS attacks.
+ * Use Moment.js to get locale time.
+ */
 function otherUserDivEscapedContentElement(message, socketId) {
   message = message.replace(/>/g, '&gt');
   message = message.replace(/</g, '&lt');
@@ -41,8 +51,12 @@ function otherUserDivEscapedContentElement(message, socketId) {
   `;
 }
 
+/*
+ * Returns download file HTML block
+ * Has function 'downloadFile' on click to download the file
+ * Use Moment.js to get locale time.
+ */
 function downloadFileBox(fileName, socketId, idNum, fileText, mimetype) {
-  // Put a backslash before apostrohpes? maybe transfer fileText as a blob
   return `
   <div class="d-flex justify-content-end mb-4">
     <div class="msg_cotainer_send">
@@ -67,6 +81,11 @@ function downloadFileBox(fileName, socketId, idNum, fileText, mimetype) {
   `;
 }
 
+/*
+ * Returns download file HTML block for other user view
+ * Has function 'downloadFile' on click to download the file
+ * Use Moment.js to get locale time.
+ */
 function otherUserDownloadFileBox(fileName, socketId, idNum, fileText, mimetype) {
   return `
   <div class="d-flex justify-content-start mb-4">
@@ -92,6 +111,10 @@ function otherUserDownloadFileBox(fileName, socketId, idNum, fileText, mimetype)
   `;
 }
 
+/*
+ * Returns image HTML block
+ * Use Moment.js to get locale time.
+ */
 function imageHTML(data, socketId, filename) {
   return `
   <div class="d-flex justify-content-end mb-4">
@@ -107,6 +130,10 @@ function imageHTML(data, socketId, filename) {
   `;
 }
 
+/*
+ * Returns image HTML block for other user view
+ * Use Moment.js to get locale time.
+ */
 function otherUserImageHTML(data, socketId, filename) {
   return `
   <div class="d-flex justify-content-start mb-4">
@@ -130,7 +157,6 @@ function divSystemContentElement(message) {
 }
 
 function b64toUnicode(data) {
-  // const b64text = data.replace(/^data:(image|text)\/(png|plain);base64,/, '');
   const b64text = data.replace(/^data:.*\/.*;base64,/, '');
   return decodeURIComponent(escape(window.atob(b64text)));
 }
@@ -144,7 +170,7 @@ function handleFiles(data) {
 
   reader.onloadend = () => {
     globalFileData = reader.result;
-    // open modal for selecting filename before sending to server
+    // Open modal for selecting filename before sending to server
     $('#fileNameModal').css('display', 'block');
   };
   reader.readAsDataURL(file);
@@ -162,22 +188,12 @@ function toggleContent(data) {
   }
 }
 
+/*
+ * Download file from browser
+ */
 function downloadFile(fileData) {
   const blob = new Blob([fileData.data], { type: `${fileData.mimetype};charset=utf-8` });
   saveAs(blob, fileData.name);
-}
-
-function ab2str(buf) {
-  return String.fromCharCode.apply(null, new Uint8Array(buf));
-}
-
-function str2ab(str) {
-  const buf = new ArrayBuffer(str.length * 2); // 2 bytes for each char
-  const bufView = new Uint8Array(buf);
-  for (let i = 0, strLen = str.length; i < strLen; i += 1) {
-    bufView[i] = str.charCodeAt(i);
-  }
-  return buf;
 }
 
 const socket = io.connect();
@@ -187,10 +203,10 @@ const socket = io.connect();
  */
 $(document).ready(() => {
   // Initialise protocol here to get keys
-  // start off protocol by creating rsa public and private keys (async)
+  // Start off protocol by creating rsa public and private keys (async)
   initiateProtocol(socket);
 
-  // receive remote public key from other client (async)
+  // Receive remote public key from other client (async)
   getRemotePublicKey(socket);
 
   // Step 1: A -> B: A, B, { PassA, { H(PassA) }Ka-1 }Kb
@@ -222,28 +238,25 @@ $(document).ready(() => {
    */
   socket.on('joinResult', (result) => {
     $('#room').text(result.room);
-    $('#messages').append(divSystemContentElement('Room changed.'));
-  });
-
-  socket.on('initiateEncryptionDisplay', () => {
-    $('#lockimg').css('display', 'block');
-    $('#body').css('background', 'gray');
-    $('#encryptChat').prop('checked', true);
-  });
-
-  socket.on('stopEncryptionDisplay', () => {
-    $('#lockimg').css('display', 'none');
-    $('#body').css('background', 'linear-gradient(to right, #91EAE4, #86A8E7, #7F7FD5)');
-    $('#encryptChat').prop('checked', false);
+    $('#messages').append(divSystemContentElement('Room changed'));
   });
 
   /*
-   * Add basic message to chat.
-  socket.on('message', (message) => {
-    const newElement = $('<div></div>').text(message.text);
-    $('#messages').append(newElement);
-  });
+   * Change other user's display for encrypted mode
    */
+  socket.on('changeEncryptionDisplay', (state) => {
+    if (state) {
+      // Initiate encryption display
+      $('#lockimg').css('display', 'block');
+      $('#body').css('background', 'gray');
+      $('#encryptChat').prop('checked', true);
+    } else {
+      // Turn off encryption display
+      $('#lockimg').css('display', 'none');
+      $('#body').css('background', 'linear-gradient(to right, #91EAE4, #86A8E7, #7F7FD5)');
+      $('#encryptChat').prop('checked', false);
+    }
+  });
 
   /*
    * Add a system message to the chat.
@@ -283,11 +296,8 @@ $(document).ready(() => {
   socket.on('receiveEncryptedMessage', (message) => {
     const decoder = new TextDecoder();
     const messageArrayBuffer = new Uint8Array(Object.values(message));
-    console.log('message array buffer: ', messageArrayBuffer);
     decryptAES(aesKab, iv, messageArrayBuffer).then((decryptedMessage) => {
-      console.log('decryted Message: ', decryptedMessage);
       const decodedMessage = decoder.decode(decryptedMessage);
-      console.log('decoded Message: ', decodedMessage);
       const finalMessage = JSON.parse(decodedMessage);
       $('#messages').append(otherUserDivEscapedContentElement(finalMessage.message, finalMessage.socketId));
     });
@@ -298,14 +308,8 @@ $(document).ready(() => {
     const messageArrayBuffer = new Uint8Array(Object.values(data));
     decryptAES(aesKab, iv, messageArrayBuffer).then((decryptedMessage) => {
       const decodedMessage = JSON.parse(decoder.decode(decryptedMessage));
-      console.log('decoded Message: ', decodedMessage);
       $('#messages').append(otherUserImageHTML(decodedMessage.data, decodedMessage.socketId, decodedMessage.fileName));
     });
-  });
-
-  socket.on('encryptionFinishedMessage', () => {
-    chatApp.sendEncryptedMessage(globalMessageData);
-    globalMessageData = null;
   });
 
   /*
@@ -315,17 +319,7 @@ $(document).ready(() => {
     const message = $('#send-message').val();
 
     if ($('#encryptChat').prop('checked')) {
-      if (aesKab) {
-        // use encryption key already stored
-        console.log('aesKab has a value ++++++++');
-        // chatApp.sendEncryptedMessage(message);
-        chatApp.sendEncryptedMessage({ message: message, socketId: socket.id });
-      } else {
-        // start encryption and send message afterwards
-        console.log('aesKab is null ------------');
-        globalMessageData = message;
-        socket.emit('encryptProtocol');
-      }
+      chatApp.sendEncryptedMessage({ message: message, socketId: socket.id });
     } else {
       chatApp.sendMessage($('#room').text(), message);
     }
@@ -362,15 +356,7 @@ $(document).ready(() => {
     // Determine if its an image from its mime type
     if (mimeType.split('/')[0] === 'image') {
       if ($('#encryptChat').prop('checked')) {
-        if (aesKab) {
-          // use encryption key already stored
-          console.log('aesKab has a value ++++++++');
-          chatApp.sendEncryptedImage(message);
-        } else {
-          // start encryption and send image afterwards
-          console.error('aesKab is null ------------');
-          // socket.emit('encryptProtocol');
-        }
+        chatApp.sendEncryptedImage(message);
       } else {
         chatApp.sendImage(message);
       }
@@ -380,17 +366,10 @@ $(document).ready(() => {
           socket.id,
           `${fileName.target[0].value}.${fileExtension}`)
       );
+      $('#messages').scrollTop($('#messages').prop('scrollHeight'));
     } else {
       if ($('#encryptChat').prop('checked')) {
-        if (aesKab) {
-          // use encryption key already stored
-          console.log('aesKab has a value ++++++++');
-          chatApp.sendEncryptedFile(message);
-        } else {
-          // start encryption and send file afterwards
-          console.log('aesKab is null ------------');
-          socket.emit('encryptProtocol');
-        }
+        chatApp.sendEncryptedFile(message);
       } else {
         chatApp.sendFile(message);
       }
@@ -402,6 +381,7 @@ $(document).ready(() => {
           b64toUnicode(globalFileData),
           mimeType)
       );
+      $('#messages').scrollTop($('#messages').prop('scrollHeight'));
     }
 
     return false;
@@ -414,6 +394,10 @@ $(document).ready(() => {
     $('#fileNameModal').css('display', 'none');
   });
 
+  /*
+   * When the Encrypt Chat button is toggled change the background
+   * and if needed start the encryption protocol to get the session key
+   */
   $('#encryptChat').change((event) => {
     if (event.target.checked) {
       $('#lockimg').css('display', 'block');

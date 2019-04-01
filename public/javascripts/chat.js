@@ -1,3 +1,10 @@
+/*
+ * Name: chat.js
+ *
+ * Chat app class that is used as a layer of abstraction to send data
+ * to the user other through the server
+ */
+
 class Chat {
   constructor(socket) {
     this.socket = socket;
@@ -23,8 +30,10 @@ class Chat {
   }
 
   sendEncryptedFile(data) {
-    // TODO
-    this.socket.emit('sendEncryptedFile', data);
+    const encoder = new TextEncoder('utf-8');
+    encryptAES(aesKab, iv, encoder.encode(JSON.stringify(data))).then((encryptedData) => {
+      this.socket.emit('sendEncryptedFile', encryptedData);
+    });
   }
 
   sendImage(data) {
@@ -32,7 +41,6 @@ class Chat {
   }
 
   sendEncryptedImage(data) {
-    // TODO
     const encoder = new TextEncoder('utf-8');
     encryptAES(aesKab, iv, encoder.encode(JSON.stringify(data))).then((encryptedData) => {
       this.socket.emit('encryptedImage', encryptedData);

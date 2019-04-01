@@ -1,3 +1,9 @@
+/*
+ * Name: encryption.js
+ *
+ * Encryption helper functions used for the encryption protocol
+ */
+
 // RSA Keys
 let rsaPublicKey; // My public
 let rsaPrivateKey; // My private
@@ -6,8 +12,6 @@ let aesKeyHash;
 let passA;
 let aesKab;
 let iv;
-let incoming_nickname;
-let current_nickname;
 
 // Hash with SHA
 function hashSHA(data) {
