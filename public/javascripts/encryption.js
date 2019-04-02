@@ -10,6 +10,7 @@ let rsaPrivateKey; // My private
 let rsaPublicKey_2; // Other user's public key
 let aesKeyHash;
 let passA;
+let passB;
 let aesKab;
 let iv;
 

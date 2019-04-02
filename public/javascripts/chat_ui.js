@@ -4,6 +4,7 @@
  * Client side chat code that handles sending data and displaying data to the UI
  */
 
+// Variable to temporarily store file data when control flow is interrupted to get file name
 let globalFileData;
 
 /*
@@ -209,20 +210,19 @@ $(document).ready(() => {
   // Receive remote public key from other client (async)
   getRemotePublicKey(socket);
 
-  // Step 1: A -> B: A, B, { PassA, { H(PassA) }Ka-1 }Kb
+  // Step 1: A -> B: { PassA, { H(PassA) }Ka-1 }Kb
   step1(socket);
 
   // Step 2: B: Kab = H(PassA || PassB)
   step2(socket);
 
   // Step 3 (called from within step2)
-  // B -> A: B, A, { PassB, { PassA }Kab, { H(PassB, { PassA }Kb) }Kb-1 }Ka
+  // B -> A: { PassB, { PassA }Kab, { H(PassB, { PassA }Kb) }Kb-1 }Ka
 
   // Step 4: A: Kab = H(PassA || PassB)
   step4(socket);
 
-  // Step 5: A -> B: A, B, { PassB }Kab
-  // TODO
+  // Step 5: A -> B: { PassB }Kab
   step5(socket);
 
   const chatApp = new Chat(socket);

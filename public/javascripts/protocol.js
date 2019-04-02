@@ -31,12 +31,14 @@ function getRemotePublicKey(socket) {
     const rsaExportedKey_2 = msg;
     importRSA_OAEP(rsaExportedKey_2).then((key) => {
       rsaPublicKey_2 = key;
+      console.log('Other user public key received successfully');
     });
   });
 }
 
 /*
  * Step 1 of encryption protocol
+ * A -> B: A, B, { PassA, { H(PassA) }Ka-1 }Kb
  */
 function step1(socket) {
   socket.on('step1', () => {
@@ -58,7 +60,7 @@ function step1(socket) {
             combinedArray.set(data);
             combinedArray.set(data_2, data.length);
             const message = combinedArray;
-            socket.emit('getResponseStep2', message);
+            socket.emit('getResponseToStartStep2', message);
           });
         });
       });
@@ -68,11 +70,12 @@ function step1(socket) {
 
 /*
  * Step 2 of encryption protocol
+ * B: Kab = H(PassA || PassB)
  */
 function step2(socket) {
-  socket.on('step2', (msg) => {
+  socket.on('step2', (message) => {
     console.log('Step 2 starting');
-    combinedArray = new Uint8Array(Object.values(msg));
+    combinedArray = new Uint8Array(Object.values(message));
     exportPrivateRSA(rsaPrivateKey).then((exportedRSAKey) => {
       importPrivateRSA_OAEP(exportedRSAKey).then((importedRSAKey) => {
         const splitCombinedArray = combinedArray.slice(0, 256);
@@ -92,7 +95,8 @@ function step2(socket) {
                   verifyRSA(importedPublicRSAKey, signature, hashed).then((isvalid) => {
                     if (isvalid) {
                       // Create random number PassB
-                      const passB = window.crypto.getRandomValues(new Uint8Array(6));
+                      passB = window.crypto.getRandomValues(new Uint8Array(6));
+                      // const passB = window.crypto.getRandomValues(new Uint8Array(6));
                       console.log('Pass B: ', passB);
                       const aesKey = new Uint8Array(passA.length + passB.length);
                       aesKey.set(passA);
@@ -119,6 +123,7 @@ function step2(socket) {
 
 /*
  * Step 3 of encryption protocol
+ * B -> A: B, A, { PassB, { PassA }Kab, { H(PassB, { PassA }Kab) }Kb-1 }Ka
  */
 function step3(passA, passB, aesKeyHash, socket) {
   console.log('Step 3 starting');
@@ -146,7 +151,7 @@ function step3(passA, passB, aesKeyHash, socket) {
                   message.set(iv);
                   message.set(encryptedData, iv.length);
                   message.set(encryptedData_2, (iv.length + encryptedData.length));
-                  socket.emit('getResponseStep4', message);
+                  socket.emit('getResponseToStartStep4', message);
                 });
               });
             });
@@ -159,6 +164,7 @@ function step3(passA, passB, aesKeyHash, socket) {
 
 /*
  * Step 4 of encryption protocol
+ * A: Kab = H(PassA || PassB)
  */
 function step4(socket) {
   socket.on('step4', (msg) => {
@@ -180,7 +186,7 @@ function step4(socket) {
             const passB = message.slice(0, 6); // PassB
             console.log('PassB: ', passB);
             console.log('PassA: ', passA);
-            const encryptedPassA = message.slice(6, 28); // {passB}kab
+            const encryptedPassA = message.slice(6, 28); // {passA}kab
             const signature = message.slice(28, 284);
             combinedArray = new Uint8Array(passB.length + encryptedPassA.length);
             combinedArray.set(passB);
@@ -200,13 +206,10 @@ function step4(socket) {
                         console.log(aesKeyHash);
                         importAES(aesKeyHash, iv).then((Kab) => { // Kab key object
                           aesKab = Kab;
-                          decryptAES(Kab, iv, encryptedPassA).then((newPassA) => { // {PassA}Kab
-                            console.log('Decrypted PassA: ', newPassA);
-                            if (newPassA.sort().join(',') === passA.sort().join(',')) {
-                              console.log('Encrption Protocol has run Successfully!');
-                            } else {
-                              console.log("Protocol failed: PassA's are NOT the same");
-                            }
+                          // Step 5
+                          // A -> B: { PassA }Kab
+                          encryptAES(Kab, iv, passB).then((encryptedPassB) => {
+                            socket.emit('finishProtocol', encryptedPassB);
                           });
                         });
                       });
@@ -226,9 +229,18 @@ function step4(socket) {
 
 /*
  * Step 5 of encryption protocol
+ * A -> B: { PassB }Kab
  */
 function step5(socket) {
-  socket.on('step5', () => {
-    //
+  socket.on('step5', (encryptedPassB) => {
+    const decodedPassB = new Uint8Array(Object.values(encryptedPassB));
+    decryptAES(aesKab, iv, decodedPassB).then((newPassB) => { // {PassB}Kab
+      console.log('Decrypted PassB: ', newPassB);
+      if (newPassB.sort().join(',') === passB.sort().join(',')) {
+        console.log('Encrption Protocol has run Successfully!');
+      } else {
+        console.error("Protocol failed: PassA's are NOT the same");
+      }
+    });
   });
 }
