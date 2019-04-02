@@ -38,7 +38,7 @@ function getRemotePublicKey(socket) {
 
 /*
  * Step 1 of encryption protocol
- * A -> B: A, B, { PassA, { H(PassA) }Ka-1 }Kb
+ * A -> B: { PassA, { H(PassA) }Ka-1 }Kb
  */
 function step1(socket) {
   socket.on('step1', () => {
@@ -123,7 +123,7 @@ function step2(socket) {
 
 /*
  * Step 3 of encryption protocol
- * B -> A: B, A, { PassB, { PassA }Kab, { H(PassB, { PassA }Kab) }Kb-1 }Ka
+ * B -> A: { PassB, { PassA }Kab, { H(PassB, { PassA }Kab) }Kb-1 }Ka
  */
 function step3(passA, passB, aesKeyHash, socket) {
   console.log('Step 3 starting');
